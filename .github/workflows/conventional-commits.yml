@@ -1,0 +1,59 @@
+name: conventional-commits
+
+on:
+  workflow_call: {}
+
+jobs:
+  lint-pr:
+    if: github.event_name == 'pull_request'
+    name: Lint commits (PR)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Provide bundled committed.toml unless the caller has its own
+        shell: bash
+        run: |
+          if [ -f committed.toml ] || [ -f .committed.toml ]; then
+            echo "Caller ships its own committed config - using it."
+            exit 0
+          fi
+          cat > committed.toml <<'CONFIG'
+          style = "conventional"
+          ignore_author_re = "(dependabot|renovate)"
+          merge_commit = false
+          CONFIG
+
+      - uses: crate-ci/committed@faeed42f2e10c244533a01525f13c4d8b6ce383f # v1.1.11
+        # commits input omitted: the default HEAD~..HEAD^2 matches GitHub's synthetic
+        # PR merge ref (HEAD^2 = PR head, HEAD~ = base)
+
+  lint-push:
+    # zero SHA = first push of a new ref: no before-range exists; PR linting covers
+    # those commits instead
+    if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+    name: Lint commits (push)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Provide bundled committed.toml unless the caller has its own
+        shell: bash
+        run: |
+          if [ -f committed.toml ] || [ -f .committed.toml ]; then
+            echo "Caller ships its own committed config - using it."
+            exit 0
+          fi
+          cat > committed.toml <<'CONFIG'
+          style = "conventional"
+          ignore_author_re = "(dependabot|renovate)"
+          merge_commit = false
+          CONFIG
+
+      - uses: crate-ci/committed@faeed42f2e10c244533a01525f13c4d8b6ce383f # v1.1.11
+        with:
+          commits: "${{ github.event.before }}..${{ github.event.after }}"
