@@ -42,6 +42,8 @@ Dependabot bumps SHA and comment together.
 - **Pull requests**: lints every commit in the PR range.
 - **Pushes**: lints the pushed range (`before..after`). The first push of a brand-new ref is
   skipped — no before-range exists; those commits are covered by PR linting.
-- The `committed` configuration (`style = "conventional"`, bot authors ignored, merge
-  commits not linted) is bundled inside the workflow — callers carry no `committed.toml`.
+- The `committed` configuration is bundled inside the workflow — callers carry no
+  `committed.toml`: conventional style, lowercase subjects, the full Conventional Commits
+  type set (`feat fix docs style refactor perf test build ci chore revert`), bot authors
+  ignored, merge commits not linted.
   A caller-local `committed.toml` overrides the bundled config if you need to diverge.
