@@ -1,0 +1,8 @@
+style = "conventional"
+subject_length = 72
+line_length = 72
+subject_capitalized = false
+imperative_subject = true
+allowed_types = ["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore", "revert"]
+ignore_author_re = "(dependabot|renovate)"
+merge_commit = false
