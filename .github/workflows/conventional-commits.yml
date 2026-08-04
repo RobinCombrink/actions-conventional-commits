@@ -4,9 +4,8 @@ on:
   workflow_call: {}
 
 jobs:
-  lint-pr:
-    if: github.event_name == 'pull_request'
-    name: Lint commits (PR)
+  lint:
+    name: Lint commits
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -22,30 +21,25 @@ jobs:
           fi
           curl -fsSL -o committed.toml https://raw.githubusercontent.com/RobinCombrink/actions-conventional-commits/ff60392ebb30b3b1ab8868be841930a5e26ad44e/committed.toml
 
-      - uses: crate-ci/committed@faeed42f2e10c244533a01525f13c4d8b6ce383f # v1.1.11
-        # commits input omitted: the default HEAD~..HEAD^2 matches GitHub's synthetic
-        # PR merge ref (HEAD^2 = PR head, HEAD~ = base)
-
-  lint-push:
-    # zero SHA = first push of a new ref: no before-range exists; PR linting covers
-    # those commits instead
-    if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
-    name: Lint commits (push)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
-      - name: Fetch the shared committed.toml unless the caller has its own
+      - name: Resolve the range, leaving it empty for a new ref that has no before-commit
+        id: range
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
         run: |
-          if [ -f committed.toml ] || [ -f .committed.toml ]; then
-            echo "Caller ships its own committed config - using it."
+          if [ "$EVENT_NAME" = pull_request ]; then
+            echo "commits=HEAD~..HEAD^2" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          curl -fsSL -o committed.toml https://raw.githubusercontent.com/RobinCombrink/actions-conventional-commits/ff60392ebb30b3b1ab8868be841930a5e26ad44e/committed.toml
+          if [ "$BEFORE" = 0000000000000000000000000000000000000000 ]; then
+            echo "commits=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "commits=$BEFORE..$AFTER" >> "$GITHUB_OUTPUT"
 
       - uses: crate-ci/committed@faeed42f2e10c244533a01525f13c4d8b6ce383f # v1.1.11
+        if: steps.range.outputs.commits != ''
         with:
-          commits: "${{ github.event.before }}..${{ github.event.after }}"
+          commits: ${{ steps.range.outputs.commits }}
