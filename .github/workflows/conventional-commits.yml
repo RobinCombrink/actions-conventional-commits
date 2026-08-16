@@ -14,12 +14,15 @@ jobs:
 
       - name: Fetch the shared committed.toml unless the caller has its own
         shell: bash
+        env:
+          POLICY_REPOSITORY: ${{ job.workflow_repository }}
+          POLICY_SHA: ${{ job.workflow_sha }}
         run: |
           if [ -f committed.toml ] || [ -f .committed.toml ]; then
             echo "Caller ships its own committed config - using it."
             exit 0
           fi
-          curl -fsSL -o committed.toml https://raw.githubusercontent.com/RobinCombrink/actions-conventional-commits/ff60392ebb30b3b1ab8868be841930a5e26ad44e/committed.toml
+          curl -fsSL -o committed.toml "https://raw.githubusercontent.com/$POLICY_REPOSITORY/$POLICY_SHA/committed.toml"
 
       - name: Resolve the range, leaving it empty for a new ref that has no before-commit
         id: range
